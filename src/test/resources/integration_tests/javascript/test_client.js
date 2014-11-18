@@ -593,6 +593,29 @@ function testCount() {
   }
 }
 
+function testUuid(){
+  eb.send('test.persistor', {
+    collection: 'testcoll',
+    action: 'save',
+    document: {
+      name: 'rob',
+      age: 46,
+      uuid : {'$uuid':'7ee973c0-54b5-11e4-aaed-0002a5d5c51b'}
+    }
+  }, function(reply){
+    vassert.assertEquals('ok', reply.status);
+    eb.send('test.persistor', {
+        collection: 'testcoll',
+        action: 'findone',
+        matcher: {uuid: {'$uuid':'7ee973c0-54b5-11e4-aaed-0002a5d5c51b'}}
+    }, function(reply){
+      vassert.assertEquals('ok', reply.status);
+      vassert.assertEquals('7ee973c0-54b5-11e4-aaed-0002a5d5c51b', reply.result.uuid);
+      vassert.testComplete();
+    });
+  });
+}
+
 function testCollectionStats() {
     eb.send('test.persistor', {
         collection: 'testcoll',
@@ -650,7 +673,7 @@ function testFindAndModify()
           'update': { '$inc': { 'age': 1 } },
           'new': true
   };
-  
+
   // save a document in the db for this test 
   eb.send('test.persistor',
 		  { 'action': 'save', 'collection': 'testcoll', 'document': testDoc }, 

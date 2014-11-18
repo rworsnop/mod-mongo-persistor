@@ -27,7 +27,9 @@ import org.vertx.java.core.json.JsonObject;
 import javax.net.ssl.SSLSocketFactory;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -536,16 +538,46 @@ public class MongoPersistor extends BusModBase implements Handler<Message<JsonOb
   }
   
   private static DBObject jsonToDBObject(JsonObject object) {
-      return new BasicDBObject(object.toMap());
+      return new BasicDBObject(transform(object.toMap()));
   }  
   
   private static DBObject jsonToDBObjectNullSafe(JsonObject object) {
     if (object != null) {
-      return new BasicDBObject(object.toMap());
+      return new BasicDBObject(transform(object.toMap()));
     } else {
       return null;
     }
   }
+
+  private static Map<String,Object> transform(Map<String,Object> map){
+    Map<String,Object> transformed = new HashMap<>();
+    for (Map.Entry<String,Object> entry : map.entrySet()){
+      if (isUuid(entry.getValue())){
+        transformed.put(entry.getKey(), transformUuid(entry.getValue()));
+      } else if (entry.getValue() instanceof Map){
+        transformed.put(entry.getKey(), transform((Map<String, Object>) entry.getValue()));
+      } else{
+        transformed.put(entry.getKey(), entry.getValue());
+      }
+    }
+    return transformed;
+  }
+
+  private static UUID transformUuid(Object uuid) {
+    return UUID.fromString((String) Map.class.cast(uuid).get("$uuid"));
+  }
+
+  private static boolean isUuid(Object object){
+    if (object instanceof Map){
+      Map map = (Map)object;
+      return map.size()==1 && map.containsKey("$uuid");
+    }
+    return false;
+  }
+
+
+
+
 
 }
 
