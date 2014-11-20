@@ -26,11 +26,7 @@ import org.vertx.java.core.json.JsonObject;
 
 import javax.net.ssl.SSLSocketFactory;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * MongoDB Persistor Bus Module<p>
@@ -403,7 +399,9 @@ public class MongoPersistor extends BusModBase implements Handler<Message<JsonOb
     }
     JsonObject reply = new JsonObject();
     if (res != null) {
-      JsonObject m = new JsonObject(res.toMap());
+      Map result = res.toMap();
+      sanitizeMap(result);
+      JsonObject m = new JsonObject(result);
       reply.putObject("result", m);
     }
     sendOK(message, reply);
@@ -575,9 +573,12 @@ public class MongoPersistor extends BusModBase implements Handler<Message<JsonOb
     return false;
   }
 
-
-
-
-
+  private static void sanitizeMap(Map<Object, Object> result){
+    for(Map.Entry<Object, Object> element :result.entrySet()){
+        if(element.getValue() instanceof UUID){
+            result.put(element.getKey(), element.getValue().toString());
+        }
+    }
+  }
 }
 
