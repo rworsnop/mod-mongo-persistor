@@ -400,8 +400,7 @@ public class MongoPersistor extends BusModBase implements Handler<Message<JsonOb
     JsonObject reply = new JsonObject();
     if (res != null) {
       Map result = res.toMap();
-      sanitizeMap(result);
-      JsonObject m = new JsonObject(result);
+      JsonObject m = new JsonObject(sanitizeMap(result));
       reply.putObject("result", m);
     }
     sendOK(message, reply);
@@ -573,12 +572,16 @@ public class MongoPersistor extends BusModBase implements Handler<Message<JsonOb
     return false;
   }
 
-  private static void sanitizeMap(Map<Object, Object> result){
+  private Map sanitizeMap(Map<Object, Object> result){
     for(Map.Entry<Object, Object> element :result.entrySet()){
         if(element.getValue() instanceof UUID){
             result.put(element.getKey(), element.getValue().toString());
         }
+        else if(element.getValue() instanceof Map){
+            result.put(element.getKey(), sanitizeMap((Map<Object, Object>) element.getValue()));
+        }
     }
+    return result;
   }
 }
 
