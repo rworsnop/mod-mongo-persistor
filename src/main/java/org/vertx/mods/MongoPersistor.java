@@ -27,6 +27,8 @@ import org.vertx.java.core.json.JsonObject;
 import javax.net.ssl.SSLSocketFactory;
 import java.net.UnknownHostException;
 import java.util.*;
+import org.vertx.java.core.json.impl.Base64;
+
 
 /**
  * MongoDB Persistor Bus Module<p>
@@ -339,7 +341,8 @@ public class MongoPersistor extends BusModBase implements Handler<Message<JsonOb
     JsonArray results = new JsonArray();
     while (cursor.hasNext() && count < max) {
       DBObject obj = cursor.next();
-      JsonObject m = new JsonObject(obj.toMap());
+      Map result = obj.toMap();
+      JsonObject m = new JsonObject(sanitizeMap(result));
       results.add(m);
       count++;
     }
@@ -426,7 +429,8 @@ public class MongoPersistor extends BusModBase implements Handler<Message<JsonOb
 
     JsonObject reply = new JsonObject();
     if (result != null) {
-      JsonObject resultJson = new JsonObject(result.toMap());
+      Map map = result.toMap();
+      JsonObject resultJson = new JsonObject(sanitizeMap(map));
       reply.putObject("result", resultJson);
     }
     sendOK(message, reply);
@@ -572,10 +576,14 @@ public class MongoPersistor extends BusModBase implements Handler<Message<JsonOb
     return false;
   }
 
+  // Converts unsupported types in DB results for use in JsonObject
   private Map sanitizeMap(Map<Object, Object> result){
     for(Map.Entry<Object, Object> element :result.entrySet()){
         if(element.getValue() instanceof UUID){
             result.put(element.getKey(), element.getValue().toString());
+        }
+        if(element.getValue() instanceof byte[]){
+            result.put(element.getKey(), Base64.encodeBytes((byte[])element.getValue()));
         }
         else if(element.getValue() instanceof Map){
             result.put(element.getKey(), sanitizeMap((Map<Object, Object>) element.getValue()));
